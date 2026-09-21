@@ -17,6 +17,7 @@ struct SensorData
 
 DHT dht(DHT_GPIO, DHT_TYPE_DHT22);
 adc_oneshot_unit_handle_t adc_handle;
+QueueHandle_t sensorQueue;
 
 void SensorTask(void *pvParameters)
 {
@@ -66,6 +67,14 @@ extern "C" void app_main()
 {
     printf("BCA152 FreeRTOS Multisensor\n");
     printf("System starting...\n");
+
+    sensorQueue = xQueueCreate(10, sizeof(SensorData));
+
+    if (sensorQueue == nullptr)
+    {
+        printf("Sensor queue creation failed\n");
+        return;
+    }
 
     adc_oneshot_unit_init_cfg_t adc_init_config = {};
     adc_init_config.unit_id = ADC_UNIT_1;
