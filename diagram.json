@@ -8,9 +8,27 @@
       "id": "esp",
       "top": 48,
       "left": -14.36,
-      "attrs": { "builder": "esp-idf" }
+      "attrs": {
+        "builder": "esp-idf"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -47.7,
+      "left": 167.4,
+      "attrs": {
+        "temperature": "25.4",
+        "humidity": "61.2"
+      }
     }
   ],
-  "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "dht1:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "dht1:SDA", "esp:4", "green", [ "v0" ] ]
+  ],
   "dependencies": {}
 }
