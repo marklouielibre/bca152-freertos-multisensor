@@ -7,6 +7,14 @@
 #define DHT_GPIO GPIO_NUM_4
 #define LDR_GPIO GPIO_NUM_34
 
+struct SensorData
+{
+    float temperature;
+    float humidity;
+    int lightLevel;
+    bool motionDetected;
+};
+
 DHT dht(DHT_GPIO, DHT_TYPE_DHT22);
 adc_oneshot_unit_handle_t adc_handle;
 
