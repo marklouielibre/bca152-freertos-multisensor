@@ -1,2 +1,6 @@
 .pio/
+build/
 .vscode/
+sdkconfig
+sdkconfig.*
+!sdkconfig.defaults
