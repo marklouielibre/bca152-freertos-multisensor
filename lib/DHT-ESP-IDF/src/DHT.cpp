@@ -49,7 +49,9 @@ DHT::~DHT() {
  *          - ESP_ERR_INVALID_STATE Wrong state, the ISR service has not been initialized.
  */
 esp_err_t DHT::begin() {
-    gpio_config_t io_conf;
+    // Initialize every field: gpio_config_t also contains pull-down and
+    // interrupt settings that must not inherit indeterminate stack values.
+    gpio_config_t io_conf = {};
     //interrupt of rising edge
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
     //bit mask of the pins, use GPIO4/5 here
@@ -58,6 +60,7 @@ esp_err_t DHT::begin() {
     io_conf.mode = GPIO_MODE_INPUT;
     //enable pull-up mode
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     esp_err_t res = gpio_config( &io_conf );
 
     if ( res != ESP_OK ) {
@@ -206,8 +209,8 @@ esp_err_t DHT::singleRead( float *t, float *h ) {
     if ( this->_edges_read == 0 ) {
         ESP_LOGE( DHT_TAG, "No response from sensor" );
         return ESP_ERR_NOT_FOUND;
-    } else if ( this->_edges_read < expected_response_size ) {
-        ESP_LOGE( DHT_TAG, "Sensor response is too short. Expected %d edges, got %d", expected_response_size, this->_edges_read );
+    } else if ( this->_edges_read < minimum_response_size ) {
+        ESP_LOGE( DHT_TAG, "Sensor response is too short. Expected at least %d edges, got %d", minimum_response_size, this->_edges_read );
         return ESP_ERR_INVALID_RESPONSE;
     }
 
@@ -217,11 +220,15 @@ esp_err_t DHT::singleRead( float *t, float *h ) {
     }
 
     uint8_t data[5] = { 0 };
-    assert( ( sizeof( data ) * 16 + 3 ) > sizeof( this->_response_timings ) );
+    assert( ( sizeof( data ) * 16 + 3 ) <= sizeof( this->_response_timings ) );
+
+    // If timing capture starts after the first response edge, the initial low
+    // response interval is absent and data starts at index 2. Otherwise it
+    // starts at index 3 after the release interval and both response intervals.
+    const int first_data_timing = this->_response_timings[0] > 50 ? 2 : 3;
 
     for ( int i = 0; i < sizeof( data ) * 8; i++ ) {
-        // offset +2 to skip first 2 edges ("Sensor response signal" ). +0 offset is "low" bit part, +1 offset is "high" bit part
-        bool bit = this->_response_timings[2 + i * 2 + 1] > this->_response_timings[2 + i * 2]; // If "high" longer than "low" - then 1 and 0 otherwise
+        bool bit = this->_response_timings[first_data_timing + i * 2 + 1] > this->_response_timings[first_data_timing + i * 2]; // If "high" longer than "low" - then 1 and 0 otherwise
 
         data[i / 8] = data[i / 8] << 1;
         data[i / 8] = data[i / 8] | bit;
@@ -313,7 +320,7 @@ esp_err_t DHT::singleRead( float *t, float *h ) {
     }
     };
 
-    ESP_LOGI( DHT_TAG, "t: %f; h: %f", t ? *t : NAN, h ? *h : NAN );
+    ESP_LOGD( DHT_TAG, "t: %f; h: %f", t ? *t : NAN, h ? *h : NAN );
 
     return ESP_OK;
 };
@@ -363,7 +370,7 @@ float DHT::convertCtoF( const float tC ) const {
 void DHT::gpio_isr_handler( void *arg ) {
     DHT *self = reinterpret_cast<DHT *>( arg );
     if ( self->_reading_response ) {
-        if ( self->_edges_read < expected_response_size ) {
+        if ( self->_edges_read < response_timings_size ) {
             int64_t curr_time = esp_timer_get_time();
             int64_t interval = curr_time - self->_prev_edge_time;
             self->_prev_edge_time = curr_time;

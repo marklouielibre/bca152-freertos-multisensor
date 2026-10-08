@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -82,30 +80,6 @@ void InputTask(void *pvParameters)
                 }
             }
 
-            xSemaphoreTake(serialMutex, portMAX_DELAY);
-
-            printf("\nROOM MONITOR\n");
-
-            switch (currentMode)
-            {
-                case DisplayMode::TEMPERATURE:
-                    printf("Page: Temperature\n");
-                    break;
-
-                case DisplayMode::HUMIDITY:
-                    printf("Page: Humidity\n");
-                    break;
-
-                case DisplayMode::LIGHT:
-                    printf("Page: Light\n");
-                    break;
-
-                case DisplayMode::MOTION:
-                    printf("Page: Motion\n");
-                    break;
-            }
-
-            xSemaphoreGive(serialMutex);
         }
 
         lastCLK = currentCLK;

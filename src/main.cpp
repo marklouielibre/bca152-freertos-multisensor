@@ -147,6 +147,9 @@ extern "C" void app_main()
         return;
     }
 
+    // Keep the serial monitor focused on the same page and value as the OLED.
+    esp_log_level_set("DHT", ESP_LOG_NONE);
+
     // Give the DHT22 time to stabilize
     vTaskDelay(pdMS_TO_TICKS(2000));
 
@@ -179,14 +182,18 @@ extern "C" void app_main()
 
 
     // SensorTask - Priority 2
-    xTaskCreate(
+    if (xTaskCreate(
         SensorTask,
         "SensorTask",
         4096,
         nullptr,
         2,
         nullptr
-    );
+    ) != pdPASS)
+    {
+        printf("SensorTask creation failed\n");
+        return;
+    }
 
     // InputTask - Priority 3
     xTaskCreate(

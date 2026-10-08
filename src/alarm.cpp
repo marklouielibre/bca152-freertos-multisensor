@@ -7,7 +7,7 @@ AlarmState evaluateTemperature(float temperature)
         return AlarmState::LOW_TEMPERATURE;
     }
 
-    if (temperature > 30.0)
+    if (temperature >= 30.0)
     {
         return AlarmState::HIGH_TEMPERATURE;
     }

@@ -24,9 +24,11 @@
 #include "freertos/task.h"
 
 static const char DHT_TAG[] = "DHT";
-// ( 1 + 40 ) * 2 => "Sensor response signal" + 40 data bits. Multiply on 2 because we measure low and high time of each bit
+// Maximum capture: initial bus-release interval + sensor response (2 intervals) + 40 data bits (80 intervals).
+// Some captures begin after the first response edge, so accept the shorter 82-interval frame too.
 // Notice! Some sensors (AM2301 for example) sends more data bits (64). But, "extra" bits are zero, and we ignore it
-static const uint8_t expected_response_size = ( 1 + 40 ) * 2;
+static const uint8_t response_timings_size = 3 + 40 * 2;
+static const uint8_t minimum_response_size = ( 1 + 40 ) * 2;
 
 typedef enum {
     DHT_TYPE_DHT11 = 11,
@@ -85,7 +87,7 @@ private:
     bool _service_installed = false;
     bool _isr_handler_installed = false;
     bool _reading_response = false;
-    uint8_t _response_timings[expected_response_size];
+    uint8_t _response_timings[response_timings_size];
     uint8_t _edges_read = 0;
     int64_t _prev_edge_time = 0;
 
